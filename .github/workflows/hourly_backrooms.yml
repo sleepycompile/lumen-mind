@@ -2,9 +2,8 @@ name: hourly-backrooms
 
 on:
   schedule:
-    - cron: "0 * * * *" # every hour (UTC)
+    - cron: "*/10 * * * *"
   workflow_dispatch:
-
 jobs:
   ping:
     runs-on: ubuntu-latest
