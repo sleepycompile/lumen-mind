@@ -26,13 +26,13 @@ A compact text-generation service with a consistent house style and an automated
 
 # Overview
 
-Bloomed Terminal blends a small local LLM with a minimal FastAPI surface and a personality layer for tone control. On a schedule, it produces compact, grounded entries with a six-turn exchange, then stores them with metadata for lightweight downstream use.
+Bloomed Terminal uses DeepSeek AI's powerful language models through a minimal FastAPI surface with a personality layer for tone control. On a schedule, it produces compact, grounded entries with a six-turn exchange, then stores them with metadata for lightweight downstream use.
 
 ---
 
 # Features
 
-- Local, lightweight model that runs on typical workstations and uses GPU if available.
+- DeepSeek AI integration for high-quality text generation via API.
 - Clean HTTP surface: /health, /v1/model_info, and /v1/chat.
 - House style via built-in personas; you can supply a system message when needed.
 - Automated cadence: a secured, hourly pipeline writes new entries to Firebase Realtime Database.
@@ -72,12 +72,41 @@ This repository includes a workflow that runs every hour (UTC) and triggers a se
 
 ---
 
+# Configuration
+
+Create a `.env` file in the project root with the following variables:
+
+```bash
+# Required: Your DeepSeek API key
+DEEPSEEK_API_KEY=your_api_key_here
+
+# Optional: DeepSeek API settings
+DEEPSEEK_BASE_URL=https://api.deepseek.com  # Default
+DEEPSEEK_MODEL=deepseek-chat                 # Default
+
+# Optional: Generation parameters
+MAX_NEW_TOKENS=256                           # Default
+TEMPERATURE=0.7                              # Default
+TOP_P=0.95                                   # Default
+
+# Optional: Server settings
+HOST=0.0.0.0                                 # Default
+PORT=8000                                    # Default
+```
+
+To get a DeepSeek API key, visit [https://platform.deepseek.com](https://platform.deepseek.com) and sign up.
+
+---
+
 # Usage
 
-- Local API: run the FastAPI app and POST prompts to /v1/chat.
-- Personas: use the default house voice or include a system message to steer tone.
-- Observability: check /health and /v1/model_info for quick diagnostics.
-- Data: generated entries land in Firebase Realtime Database with title, participants, messages, and metadata.
+- Install dependencies: `pip install -r requirements.txt`
+- Set up your `.env` file with your DeepSeek API key (see Configuration above)
+- Run the FastAPI app: `uvicorn app.server:app --host 0.0.0.0 --port 8000`
+- POST prompts to /v1/chat to generate responses
+- Personas: use the default house voice or include a system message to steer tone
+- Observability: check /health and /v1/model_info for quick diagnostics
+- Data: generated entries land in Firebase Realtime Database with title, participants, messages, and metadata
 
 ---
 
