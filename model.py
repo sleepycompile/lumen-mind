@@ -1,32 +1,47 @@
-import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
-from peft import get_peft_model, LoraConfig
+"""
+model.py — LUMEN processing layer
+
+Current: Claude Opus via Anthropic API
+Previous: Qwen/Qwen2.5-7B with LoRA fine-tuning (see legacy/ branch)
+
+The shift from local fine-tuning to Opus means LUMEN's personality is now
+injected through system prompts and conversation context rather than weight
+modifications. The tradeoff: we lose parameter-level personality baking but
+gain 200K context, stronger reasoning, and the ability to evolve personality
+across longer conversations without retraining.
+"""
+
+import anthropic
 from config import Config
 
-def load_model_and_tokenizer():
-    tokenizer = AutoTokenizer.from_pretrained(Config.MODEL_NAME)
-    tokenizer.pad_token = tokenizer.eos_token
+
+def load_model():
+    """Initialize the Anthropic client for Opus inference."""
+    client = anthropic.Anthropic(api_key=Config.API_KEY)
+    return client
+
+
+def generate(client, prompt, conversation_history=None):
+    """Generate a response from LUMEN.
     
-    model = AutoModelForCausalLM.from_pretrained(
-        Config.MODEL_NAME,
-        load_in_8bit=(Config.QUANTIZATION == "8bit"),
-        device_map="auto",
-        torch_dtype=torch.float16
+    Args:
+        client: Anthropic client instance
+        prompt: User input string
+        conversation_history: Optional list of prior message dicts
+    
+    Returns:
+        Generated response string
+    """
+    messages = conversation_history or []
+    messages.append({"role": "user", "content": prompt})
+    
+    response = client.messages.create(
+        model=Config.MODEL_NAME,
+        max_tokens=Config.MAX_TOKENS,
+        temperature=Config.TEMPERATURE,
+        top_p=Config.TOP_P,
+        system=Config.SYSTEM_PROMPT,
+        messages=messages
     )
     
-    lora_config = LoraConfig(
-        r=Config.LORA_RANK,
-        lora_alpha=32,
-        target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
-        lora_dropout=0.05,
-        bias="none",
-        task_type="CAUSAL_LM"
-    )
-    model = get_peft_model(model, lora_config)
-    
-    if Config.GRADIENT_CHECKPOINTING:
-        model.gradient_checkpointing_enable()
-    
-    model.print_trainable_parameters()
-    
-    return model, tokenizer
+    return response.content[0].text

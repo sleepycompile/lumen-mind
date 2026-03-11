@@ -1,40 +1,32 @@
-import torch
-from transformers import pipeline
-from peft import PeftModel
-from transformers import AutoModelForCausalLM, AutoTokenizer
+import anthropic
 from config import Config
 
-def load_trained_model():
-    tokenizer = AutoTokenizer.from_pretrained(Config.MODEL_NAME)
-    base_model = AutoModelForCausalLM.from_pretrained(
-        Config.MODEL_NAME,
-        device_map="auto",
-        torch_dtype=torch.float16
+def create_client():
+    return anthropic.Anthropic(api_key=Config.API_KEY)
+
+def chat(client, messages):
+    response = client.messages.create(
+        model=Config.MODEL_NAME,
+        max_tokens=Config.MAX_TOKENS,
+        temperature=Config.TEMPERATURE,
+        top_p=Config.TOP_P,
+        system=Config.SYSTEM_PROMPT,
+        messages=messages
     )
-    model = PeftModel.from_pretrained(base_model, Config.OUTPUT_DIR)
-    return model, tokenizer
+    return response.content[0].text
 
 if __name__ == "__main__":
-    model, tokenizer = load_trained_model()
-    generator = pipeline(
-        "text-generation",
-        model=model,
-        tokenizer=tokenizer,
-        device=0 if Config.DEVICE == "cuda" else -1
-    )
+    client = create_client()
+    messages = []
     
     print("LUMEN chat started. Type 'exit' to quit.\n")
     while True:
         user_input = input("You: ")
         if user_input.lower() == "exit":
             break
-        prompt = Config.PROMPT_TEMPLATE.format(input=user_input)
-        response = generator(
-            prompt,
-            max_new_tokens=200,
-            do_sample=True,
-            temperature=0.92,
-            top_p=0.95,
-            repetition_penalty=1.1
-        )[0]["generated_text"]
-        print("LUMEN:", response[len(prompt):].strip() + "\n")
+        
+        messages.append({"role": "user", "content": user_input})
+        response = chat(client, messages)
+        messages.append({"role": "assistant", "content": response})
+        
+        print(f"LUMEN: {response}\n")
