@@ -206,10 +206,10 @@ This starts an interactive chat session with Lumen's personality. Type `exit` to
 ### Generate personality dataset
 
 ```bash
-python data/prepare_dataset.py
+python legacy/qwen-finetune/prepare_dataset.py
 ```
 
-This generates the personality training pairs from the core description. With Opus, these are used as few-shot context rather than fine-tuning data.
+This generates the personality training pairs from the core description. With Opus, these can be used as few-shot context rather than fine-tuning data. See `legacy/` for the original Qwen fine-tuning workflow.
 
 ---
 
@@ -220,10 +220,14 @@ lumen-mind/
 ├── config.py                  # Model config, system prompt, parameters
 ├── model.py                   # Opus client and generation logic
 ├── inference.py               # Interactive chat loop
-├── train.py                   # Legacy notice (Qwen fine-tuning)
-├── utils.py                   # Utility functions
 ├── data/
-│   └── prepare_dataset.py     # Personality dataset generator
+│   └── lumen_personality.json # Personality dataset (generated)
+├── legacy/
+│   └── qwen-finetune/         # Original Qwen 2.5-7B LoRA fine-tuning
+│       ├── train.py            # HuggingFace Trainer + PEFT
+│       ├── prepare_dataset.py  # Dataset generator
+│       ├── utils.py            # Perplexity metrics
+│       └── README.md           # Migration notes
 ├── requirements.txt           # Dependencies
 ├── LICENSE                    # MIT
 └── README.md                  # You are here
